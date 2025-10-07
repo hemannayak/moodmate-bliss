@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Heart, Calendar, Smile } from 'lucide-react';
+import { TrendingUp, Heart, Calendar, Smile, Moon, Brain } from 'lucide-react';
 
 interface MoodLog {
   id: string;
@@ -12,6 +12,9 @@ interface MoodLog {
   intensity: number;
   note: string;
   date: string;
+  sleepQuality?: number;
+  stressLevel?: number;
+  tags?: string[];
 }
 
 const MOOD_COLORS: Record<string, string> = {
@@ -112,9 +115,68 @@ const Analytics = () => {
     return weekData;
   };
 
+  // Sleep & Stress trends
+  const getSleepStressTrend = () => {
+    const today = new Date();
+    const weekData = [];
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const dayLogs = logs.filter(log => {
+        const logDate = new Date(log.date);
+        logDate.setHours(0, 0, 0, 0);
+        return logDate.getTime() === date.getTime();
+      });
+      
+      const avgSleep = dayLogs.length > 0
+        ? dayLogs.reduce((sum, log) => sum + (log.sleepQuality || 0), 0) / dayLogs.length
+        : 0;
+      
+      const avgStress = dayLogs.length > 0
+        ? dayLogs.reduce((sum, log) => sum + (log.stressLevel || 0), 0) / dayLogs.length
+        : 0;
+      
+      weekData.push({
+        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        sleep: Number(avgSleep.toFixed(1)),
+        stress: Number(avgStress.toFixed(1)),
+      });
+    }
+    
+    return weekData;
+  };
+
+  // Activity heatmap data
+  const getActivityHeatmap = () => {
+    const heatmapData: { hour: number; day: string; value: number }[] = [];
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    days.forEach((day, dayIndex) => {
+      for (let hour = 0; hour < 24; hour++) {
+        const logsInSlot = logs.filter(log => {
+          const logDate = new Date(log.date);
+          return logDate.getDay() === dayIndex && logDate.getHours() === hour;
+        });
+        
+        heatmapData.push({
+          hour,
+          day,
+          value: logsInSlot.length,
+        });
+      }
+    });
+    
+    return heatmapData;
+  };
+
   const weeklyTrend = getWeeklyTrend();
   const moodDistribution = getMoodDistribution();
   const weeklyActivity = getWeeklyActivity();
+  const sleepStressTrend = getSleepStressTrend();
+  const heatmapData = getActivityHeatmap();
 
   const calculateStreak = () => {
     if (logs.length === 0) return 0;
@@ -263,6 +325,94 @@ const Analytics = () => {
               />
             </PieChart>
           </ResponsiveContainer>
+        </Card>
+
+        {/* Sleep & Stress Trend */}
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Moon className="h-5 w-5 text-purple-500" />
+            Sleep & Stress Levels
+          </h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={sleepStressTrend}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="day" stroke="hsl(var(--foreground))" />
+              <YAxis domain={[0, 10]} stroke="hsl(var(--foreground))" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="sleep"
+                stroke="hsl(280 50% 55%)"
+                strokeWidth={2}
+                dot={{ fill: 'hsl(280 50% 55%)', r: 5 }}
+                name="Sleep Quality"
+              />
+              <Line
+                type="monotone"
+                dataKey="stress"
+                stroke="hsl(10 75% 55%)"
+                strokeWidth={2}
+                dot={{ fill: 'hsl(10 75% 55%)', r: 5 }}
+                name="Stress Level"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        {/* Activity Heatmap */}
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Brain className="h-5 w-5 text-blue-500" />
+            Activity Heatmap
+          </h2>
+          <div className="overflow-x-auto">
+            <div className="min-w-[500px]">
+              <div className="grid grid-cols-25 gap-1">
+                <div className="col-span-1"></div>
+                {Array.from({ length: 24 }, (_, i) => (
+                  <div key={i} className="text-xs text-center text-muted-foreground">
+                    {i % 4 === 0 ? i : ''}
+                  </div>
+                ))}
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <>
+                    <div key={day} className="text-xs text-muted-foreground pr-2 flex items-center justify-end">
+                      {day}
+                    </div>
+                    {Array.from({ length: 24 }, (_, hour) => {
+                      const data = heatmapData.find(d => d.day === day && d.hour === hour);
+                      const intensity = data ? data.value : 0;
+                      const color = intensity === 0 
+                        ? 'bg-muted' 
+                        : intensity === 1 
+                        ? 'bg-primary/20' 
+                        : intensity === 2 
+                        ? 'bg-primary/40' 
+                        : 'bg-primary/80';
+                      
+                      return (
+                        <div
+                          key={`${day}-${hour}`}
+                          className={`h-6 rounded ${color} hover:ring-2 ring-primary transition-all cursor-pointer`}
+                          title={`${day} ${hour}:00 - ${intensity} entries`}
+                        />
+                      );
+                    })}
+                  </>
+                ))}
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4 text-center">
+            Shows when you typically log moods throughout the week
+          </p>
         </Card>
       </div>
 

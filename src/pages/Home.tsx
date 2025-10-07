@@ -7,74 +7,100 @@ const Home = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 md:py-32">
-        <div className="absolute inset-0 gradient-hero opacity-20"></div>
+      <section className="relative overflow-hidden py-20 md:py-32 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5">
+        <div className="absolute inset-0 gradient-hero opacity-30 animate-pulse"></div>
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-accent/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
+        </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center animate-fade-in">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+            <div className="mb-8 flex justify-center gap-4 text-6xl animate-scale-in">
+              😊 😌 😢 🤗
+            </div>
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent leading-tight">
               Track Your Mood,
               <br />
               Transform Your Life
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground mb-8">
+            <p className="text-xl md:text-2xl text-muted-foreground mb-4">
               Your personal companion for emotional wellness and mental health tracking
+            </p>
+            <p className="text-lg text-muted-foreground/80 mb-8 max-w-2xl mx-auto">
+              AI-powered insights • Sleep & stress tracking • Beautiful analytics • 100% private
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/signup">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 shadow-glow">
-                  Get Started Free
+                <Button size="lg" className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white text-lg px-10 py-6 shadow-glow hover:shadow-xl transition-all hover:scale-105">
+                  ✨ Get Started Free
                 </Button>
               </Link>
               <Link to="/features">
-                <Button size="lg" variant="outline" className="text-lg px-8">
-                  Learn More
+                <Button size="lg" variant="outline" className="text-lg px-10 py-6 border-2 hover:border-primary hover:bg-primary/5 transition-all">
+                  Learn More →
                 </Button>
               </Link>
             </div>
+            <p className="mt-6 text-sm text-muted-foreground">
+              🎉 Join thousands tracking their emotional wellness • No credit card required
+            </p>
           </div>
         </div>
       </section>
 
       {/* Features Highlight */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-gradient-to-b from-background to-muted/30">
         <div className="container mx-auto px-4">
+          <div className="text-center mb-4">
+            <span className="text-5xl mb-4 inline-block">✨</span>
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
             Everything You Need for
-            <span className="text-primary"> Emotional Wellness</span>
+            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"> Emotional Wellness</span>
           </h2>
-          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Powerful features designed to help you understand and improve your mental health
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto text-lg">
+            Powerful AI-driven features designed to help you understand and improve your mental health
           </p>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="p-8 hover:shadow-lg transition-shadow animate-scale-in bg-card border-2 border-transparent hover:border-primary/20">
-              <div className="h-16 w-16 rounded-2xl gradient-happy flex items-center justify-center mb-6 shadow-soft">
+            <Card className="p-8 hover:shadow-2xl transition-all duration-300 animate-scale-in bg-gradient-to-br from-card to-primary/5 border-2 border-transparent hover:border-primary/30 hover:-translate-y-2 group">
+              <div className="h-16 w-16 rounded-2xl gradient-happy flex items-center justify-center mb-6 shadow-soft group-hover:scale-110 transition-transform">
                 <BookOpen className="h-8 w-8 text-primary-foreground" />
               </div>
-              <h3 className="text-2xl font-semibold mb-3">Smart Journaling</h3>
-              <p className="text-muted-foreground">
+              <h3 className="text-2xl font-semibold mb-3 group-hover:text-primary transition-colors">Smart Journaling 📝</h3>
+              <p className="text-muted-foreground leading-relaxed">
                 Document your thoughts and feelings with rich text entries and mood tagging. Search and review your journey anytime.
               </p>
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <span className="text-sm text-primary font-medium">→ Start writing today</span>
+              </div>
             </Card>
 
-            <Card className="p-8 hover:shadow-lg transition-shadow animate-scale-in bg-card border-2 border-transparent hover:border-secondary/20" style={{ animationDelay: '0.1s' }}>
-              <div className="h-16 w-16 rounded-2xl gradient-energetic flex items-center justify-center mb-6 shadow-soft">
+            <Card className="p-8 hover:shadow-2xl transition-all duration-300 animate-scale-in bg-gradient-to-br from-card to-secondary/5 border-2 border-transparent hover:border-secondary/30 hover:-translate-y-2 group" style={{ animationDelay: '0.1s' }}>
+              <div className="h-16 w-16 rounded-2xl gradient-energetic flex items-center justify-center mb-6 shadow-soft group-hover:scale-110 transition-transform">
                 <Heart className="h-8 w-8 text-secondary-foreground" />
               </div>
-              <h3 className="text-2xl font-semibold mb-3">Mood Tracking</h3>
-              <p className="text-muted-foreground">
-                Log your daily emotions with 8 different moods and intensity levels. Build streaks and watch your patterns emerge.
+              <h3 className="text-2xl font-semibold mb-3 group-hover:text-secondary transition-colors">AI Mood Tracking 🧠</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Advanced activity analysis infers your emotional state. Track sleep, stress, and mood triggers with intelligent insights.
               </p>
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <span className="text-sm text-secondary font-medium">→ Discover patterns</span>
+              </div>
             </Card>
 
-            <Card className="p-8 hover:shadow-lg transition-shadow animate-scale-in bg-card border-2 border-transparent hover:border-accent/20" style={{ animationDelay: '0.2s' }}>
-              <div className="h-16 w-16 rounded-2xl gradient-calm flex items-center justify-center mb-6 shadow-soft">
+            <Card className="p-8 hover:shadow-2xl transition-all duration-300 animate-scale-in bg-gradient-to-br from-card to-accent/5 border-2 border-transparent hover:border-accent/30 hover:-translate-y-2 group" style={{ animationDelay: '0.2s' }}>
+              <div className="h-16 w-16 rounded-2xl gradient-calm flex items-center justify-center mb-6 shadow-soft group-hover:scale-110 transition-transform">
                 <TrendingUp className="h-8 w-8 text-accent-foreground" />
               </div>
-              <h3 className="text-2xl font-semibold mb-3">Visual Analytics</h3>
-              <p className="text-muted-foreground">
-                Beautiful charts and insights help you understand your emotional patterns and track your progress over time.
+              <h3 className="text-2xl font-semibold mb-3 group-hover:text-accent transition-colors">Visual Analytics 📊</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Beautiful charts, heatmaps, and trend analysis help you understand your emotional patterns and celebrate progress.
               </p>
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <span className="text-sm text-accent font-medium">→ View insights</span>
+              </div>
             </Card>
           </div>
         </div>

@@ -3,9 +3,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Heart, TrendingUp, Calendar as CalendarIcon, Award, Smile, Target, Zap, Activity } from 'lucide-react';
+import { Heart, TrendingUp, Calendar as CalendarIcon, Award, Smile, Target, Zap, Activity, Moon, Brain, Tag, MousePointer, Keyboard, Clock } from 'lucide-react';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 
 interface MoodLog {
   id: string;
@@ -15,6 +17,17 @@ interface MoodLog {
   intensity: number;
   note: string;
   date: string;
+  sleepQuality?: number;
+  stressLevel?: number;
+  tags?: string[];
+  activityMetrics?: {
+    typingSpeed: number;
+    cursorMovement: string;
+    clickFrequency: number;
+    sessionDuration: number;
+    idleTime: number;
+    inferredMood: string;
+  };
 }
 
 const MOODS = [
@@ -39,12 +52,29 @@ const SUGGESTIONS: Record<string, string[]> = {
   'Excited': ['Celebrate this feeling!', 'Share your excitement', 'Channel this energy productively'],
 };
 
+const MOOD_TAGS = [
+  { id: 'work', label: '💼 Work', color: 'hsl(220 70% 50%)' },
+  { id: 'friends', label: '👥 Friends', color: 'hsl(330 70% 60%)' },
+  { id: 'family', label: '👨‍👩‍👧 Family', color: 'hsl(280 50% 55%)' },
+  { id: 'weather', label: '🌤️ Weather', color: 'hsl(200 70% 50%)' },
+  { id: 'health', label: '💊 Health', color: 'hsl(10 75% 55%)' },
+  { id: 'exercise', label: '🏃 Exercise', color: 'hsl(120 70% 50%)' },
+  { id: 'sleep', label: '😴 Sleep', color: 'hsl(240 20% 60%)' },
+  { id: 'food', label: '🍔 Food', color: 'hsl(30 95% 60%)' },
+  { id: 'social', label: '🎉 Social', color: 'hsl(45 95% 55%)' },
+  { id: 'hobby', label: '🎨 Hobby', color: 'hsl(170 70% 45%)' },
+];
+
 const MoodTracker = () => {
   const { user } = useAuth();
+  const { metrics, getInferredMood } = useActivityTracking();
   const [logs, setLogs] = useState<MoodLog[]>([]);
   const [selectedMood, setSelectedMood] = useState('😊');
   const [selectedMoodName, setSelectedMoodName] = useState('Happy');
   const [intensity, setIntensity] = useState(5);
+  const [sleepQuality, setSleepQuality] = useState(5);
+  const [stressLevel, setStressLevel] = useState(5);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [note, setNote] = useState('');
 
   useEffect(() => {
@@ -65,6 +95,12 @@ const MoodTracker = () => {
     setSelectedMoodName(label);
   };
 
+  const toggleTag = (tagId: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tagId) ? prev.filter(t => t !== tagId) : [...prev, tagId]
+    );
+  };
+
   const handleLogMood = () => {
     const newLog: MoodLog = {
       id: Date.now().toString(),
@@ -74,6 +110,17 @@ const MoodTracker = () => {
       intensity,
       note: note.trim(),
       date: new Date().toISOString(),
+      sleepQuality,
+      stressLevel,
+      tags: selectedTags,
+      activityMetrics: {
+        typingSpeed: metrics.typingSpeed,
+        cursorMovement: metrics.cursorMovement,
+        clickFrequency: metrics.clickFrequency,
+        sessionDuration: metrics.sessionDuration,
+        idleTime: metrics.idleTime,
+        inferredMood: getInferredMood(),
+      },
     };
 
     const stored = localStorage.getItem('moodmate_mood_logs');
@@ -84,6 +131,9 @@ const MoodTracker = () => {
     setLogs([newLog, ...logs]);
     setNote('');
     setIntensity(5);
+    setSleepQuality(5);
+    setStressLevel(5);
+    setSelectedTags([]);
     toast.success('Mood logged successfully!');
   };
 
@@ -227,6 +277,66 @@ const MoodTracker = () => {
           </div>
 
           <div>
+            <Label className="text-base mb-3 block">
+              Sleep Quality: <span className="text-primary font-bold">{sleepQuality}/10</span>
+            </Label>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={sleepQuality}
+              onChange={(e) => setSleepQuality(parseInt(e.target.value))}
+              className="w-full h-3 rounded-lg appearance-none cursor-pointer bg-gradient-to-r from-purple-400 to-blue-400"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+              <span>Poor</span>
+              <span>Good</span>
+              <span>Excellent</span>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-base mb-3 block">
+              Stress Level: <span className="text-primary font-bold">{stressLevel}/10</span>
+            </Label>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={stressLevel}
+              onChange={(e) => setStressLevel(parseInt(e.target.value))}
+              className="w-full h-3 rounded-lg appearance-none cursor-pointer bg-gradient-to-r from-green-400 to-red-400"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+              <span>Low</span>
+              <span>Medium</span>
+              <span>High</span>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-base mb-3 block">What's affecting your mood?</Label>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {MOOD_TAGS.map((tag) => (
+                <button
+                  key={tag.id}
+                  onClick={() => toggleTag(tag.id)}
+                  className={`p-3 rounded-lg text-sm font-medium transition-all ${
+                    selectedTags.includes(tag.id)
+                      ? 'ring-2 ring-primary scale-105 shadow-md'
+                      : 'bg-muted hover:bg-muted/70'
+                  }`}
+                  style={{
+                    backgroundColor: selectedTags.includes(tag.id) ? `${tag.color}20` : undefined,
+                  }}
+                >
+                  {tag.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <Label htmlFor="note">Add a note (optional):</Label>
             <Textarea
               id="note"
@@ -236,6 +346,41 @@ const MoodTracker = () => {
               className="mt-2 min-h-[100px]"
             />
           </div>
+
+          {/* Activity Insights */}
+          <Card className="p-4 bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-800">
+            <h3 className="font-semibold mb-3 text-blue-900 dark:text-blue-100 flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              AI Activity Analysis
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <Keyboard className="h-4 w-4 text-blue-600" />
+                <span className="text-foreground/80">Typing: {metrics.typingSpeed} cps</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MousePointer className="h-4 w-4 text-blue-600" />
+                <span className="text-foreground/80">Cursor: {metrics.cursorMovement}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-blue-600" />
+                <span className="text-foreground/80">Clicks: {metrics.clickFrequency}/min</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-blue-600" />
+                <span className="text-foreground/80">Session: {Math.floor(metrics.sessionDuration / 60)}m</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-blue-600" />
+                <span className="text-foreground/80">Idle: {metrics.idleTime}s</span>
+              </div>
+              <div className="col-span-2 md:col-span-1">
+                <Badge variant="secondary" className="w-full justify-center">
+                  Inferred: {getInferredMood()}
+                </Badge>
+              </div>
+            </div>
+          </Card>
 
           <Button
             onClick={handleLogMood}
@@ -384,10 +529,45 @@ const MoodTracker = () => {
                         style={{ width: `${log.intensity * 10}%` }}
                       />
                     </div>
-                    <span className="text-sm font-medium">{log.intensity}/10</span>
+                   <span className="text-sm font-medium">{log.intensity}/10</span>
                   </div>
+                  {(log.sleepQuality || log.stressLevel) && (
+                    <div className="flex gap-4 text-xs text-muted-foreground mb-1">
+                      {log.sleepQuality && (
+                        <span className="flex items-center gap-1">
+                          <Moon className="h-3 w-3" />
+                          Sleep: {log.sleepQuality}/10
+                        </span>
+                      )}
+                      {log.stressLevel && (
+                        <span className="flex items-center gap-1">
+                          <Brain className="h-3 w-3" />
+                          Stress: {log.stressLevel}/10
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {log.tags && log.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {log.tags.map(tagId => {
+                        const tag = MOOD_TAGS.find(t => t.id === tagId);
+                        return tag ? (
+                          <Badge key={tagId} variant="secondary" className="text-xs">
+                            {tag.label}
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                   {log.note && (
                     <p className="text-sm text-foreground/70 mt-2">{log.note}</p>
+                  )}
+                  {log.activityMetrics && (
+                    <div className="mt-2 pt-2 border-t border-border/50">
+                      <p className="text-xs text-muted-foreground">
+                        AI detected: <span className="font-semibold text-foreground/80">{log.activityMetrics.inferredMood}</span>
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
