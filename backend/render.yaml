@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: moodmate-backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGODB_URI
+        value: mongodb+srv://MoodMate:Hemanth@2005@moodmate.gmxe0yx.mongodb.net/moodmate
+      - key: JWT_SECRET
+        value: moodmate_prod_jwt_secret_2024_min_32_chars_strong
+      - key: GEMINI_API_KEY
+        value: AIzaSyDhNTu2g30KBBRwyx62uDQI7_ifFiOagQE
+      - key: EMAIL_USER
+        value: hemwritess@gmail.com
+      - key: EMAIL_PASSWORD
+        value: Hemanth@2005
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5003
