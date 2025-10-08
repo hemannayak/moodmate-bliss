@@ -31,13 +31,13 @@ const Signup = () => {
 
     setLoading(true);
 
-    const success = await signup(email, password);
+    const result = await signup(email, password);
     
-    if (success) {
+    if (result.success) {
       toast.success('Account created successfully!');
       navigate('/mood-tracker');
     } else {
-      toast.error('Email already exists');
+      toast.error(result.error || 'Signup failed');
     }
     
     setLoading(false);
