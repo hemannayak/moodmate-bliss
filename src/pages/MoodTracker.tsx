@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -69,13 +69,16 @@ const MoodTracker = () => {
   const { user } = useAuth();
   const { metrics, getInferredMood } = useActivityTracking();
   const [logs, setLogs] = useState<MoodLog[]>([]);
-  const [selectedMood, setSelectedMood] = useState('😊');
-  const [selectedMoodName, setSelectedMoodName] = useState('Happy');
   const [intensity, setIntensity] = useState(5);
   const [sleepQuality, setSleepQuality] = useState(5);
   const [stressLevel, setStressLevel] = useState(5);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [note, setNote] = useState('');
+  
+  // Calculate predicted mood based on metrics
+  const predictedMood = React.useMemo(() => {
+    return getPredictedMood();
+  }, [sleepQuality, stressLevel, intensity]);
 
   useEffect(() => {
     loadLogs();
@@ -88,17 +91,6 @@ const MoodTracker = () => {
       const userLogs = allLogs.filter(l => l.userId === user?.id);
       setLogs(userLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }
-  };
-
-  const handleMoodSelect = (emoji: string, label: string) => {
-    setSelectedMood(emoji);
-    setSelectedMoodName(label);
-  };
-
-  const toggleTag = (tagId: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tagId) ? prev.filter(t => t !== tagId) : [...prev, tagId]
-    );
   };
 
   const getPredictedMood = (): string => {
@@ -117,15 +109,21 @@ const MoodTracker = () => {
     return 'Frustrated';
   };
 
+  const toggleTag = (tagId: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tagId) ? prev.filter(t => t !== tagId) : [...prev, tagId]
+    );
+  };
+
   const handleLogMood = () => {
-    const predictedMood = getPredictedMood();
-    const predictedMoodEmoji = MOODS.find(m => m.label === predictedMood)?.emoji || selectedMood;
+    const predictedMoodName = getPredictedMood();
+    const predictedMoodEmoji = MOODS.find(m => m.label === predictedMoodName)?.emoji || '😊';
     
     const newLog: MoodLog = {
       id: Date.now().toString(),
       userId: user!.id,
       mood: predictedMoodEmoji,
-      moodName: predictedMood,
+      moodName: predictedMoodName,
       intensity,
       note: note.trim(),
       date: new Date().toISOString(),
@@ -243,32 +241,39 @@ const MoodTracker = () => {
       <Card className="p-6 mb-8 shadow-soft">
         <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
           <Heart className="h-6 w-6 text-primary" />
-          How are you feeling today?
+          Mood Prediction Based on Your Metrics
         </h2>
 
         <div className="space-y-6">
-          <div>
-            <Label className="text-base mb-3 block">Select your mood:</Label>
-            <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-              {MOODS.map((mood) => (
-                <button
-                  key={mood.emoji}
-                  onClick={() => handleMoodSelect(mood.emoji, mood.label)}
-                  className={`flex flex-col items-center p-4 rounded-xl transition-all ${
-                    selectedMood === mood.emoji
-                      ? 'bg-primary/20 scale-110 shadow-lg border-2 border-primary'
-                      : 'bg-muted hover:bg-muted/70 border-2 border-transparent'
-                  }`}
-                  style={{
-                    backgroundColor: selectedMood === mood.emoji ? `${mood.color}20` : undefined,
-                  }}
-                >
-                  <span className="text-4xl mb-2">{mood.emoji}</span>
-                  <span className="text-xs font-medium">{mood.label}</span>
-                </button>
-              ))}
+          {/* Predicted Mood Display */}
+          <Card className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-2 border-purple-500/30">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-2">Your Predicted Mood</p>
+              <div className="flex items-center justify-center gap-4 mb-3">
+                <span className="text-7xl">
+                  {MOODS.find(m => m.label === predictedMood)?.emoji || '😊'}
+                </span>
+                <div className="text-left">
+                  <p className="text-3xl font-bold text-primary">{predictedMood}</p>
+                  <p className="text-sm text-muted-foreground">Based on your current metrics</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
+                <div className="bg-background/50 p-2 rounded">
+                  <p className="text-muted-foreground">Sleep</p>
+                  <p className="font-bold">{sleepQuality}/10</p>
+                </div>
+                <div className="bg-background/50 p-2 rounded">
+                  <p className="text-muted-foreground">Stress</p>
+                  <p className="font-bold">{stressLevel}/10</p>
+                </div>
+                <div className="bg-background/50 p-2 rounded">
+                  <p className="text-muted-foreground">Intensity</p>
+                  <p className="font-bold">{intensity}/10</p>
+                </div>
+              </div>
             </div>
-          </div>
+          </Card>
 
           <div>
             <Label className="text-base mb-3 block">
@@ -405,15 +410,15 @@ const MoodTracker = () => {
             onClick={handleLogMood}
             className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white h-12 text-lg"
           >
-            Log Mood
+            Save Predicted Mood
           </Button>
 
           {/* Suggestions */}
-          {SUGGESTIONS[selectedMoodName] && (
+          {SUGGESTIONS[predictedMood] && (
             <Card className="p-4 bg-muted/50 border-2 border-primary/20">
-              <h3 className="font-semibold mb-2 text-primary">💡 Suggestions for {selectedMoodName}:</h3>
+              <h3 className="font-semibold mb-2 text-primary">💡 Suggestions for {predictedMood}:</h3>
               <ul className="space-y-1">
-                {SUGGESTIONS[selectedMoodName].map((suggestion, i) => (
+                {SUGGESTIONS[predictedMood].map((suggestion, i) => (
                   <li key={i} className="text-sm text-foreground/80">• {suggestion}</li>
                 ))}
               </ul>
