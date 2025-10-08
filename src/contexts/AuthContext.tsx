@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authAPI } from '@/lib/api';
 
 interface User {
   id: string;
@@ -17,37 +18,31 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Check for existing session
-    const storedUser = localStorage.getItem('moodmate_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    const checkAuth = async () => {
+      const token = localStorage.getItem('moodmate_token');
+      if (token) {
+        try {
+          const userData = await authAPI.getMe();
+          setUser({ id: userData._id, email: userData.email });
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          localStorage.removeItem('moodmate_token');
+        }
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   const signup = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Demo: Store in localStorage (replace with MongoDB API call)
-      const users = JSON.parse(localStorage.getItem('moodmate_users') || '[]');
-      
-      if (users.find((u: any) => u.email === email)) {
-        return false; // User already exists
-      }
-
-      const newUser = {
-        id: Date.now().toString(),
-        email,
-        password, // In production, this should be hashed
-      };
-
-      users.push(newUser);
-      localStorage.setItem('moodmate_users', JSON.stringify(users));
-
-      const userSession = { id: newUser.id, email: newUser.email };
-      setUser(userSession);
-      localStorage.setItem('moodmate_user', JSON.stringify(userSession));
-
+      const data = await authAPI.signup(email, password);
+      setUser({ id: data._id, email: data.email });
       return true;
     } catch (error) {
       console.error('Signup error:', error);
@@ -57,18 +52,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Demo: Check localStorage (replace with MongoDB API call)
-      const users = JSON.parse(localStorage.getItem('moodmate_users') || '[]');
-      const foundUser = users.find((u: any) => u.email === email && u.password === password);
-
-      if (foundUser) {
-        const userSession = { id: foundUser.id, email: foundUser.email };
-        setUser(userSession);
-        localStorage.setItem('moodmate_user', JSON.stringify(userSession));
-        return true;
-      }
-
-      return false;
+      const data = await authAPI.login(email, password);
+      setUser({ id: data._id, email: data.email });
+      return true;
     } catch (error) {
       console.error('Login error:', error);
       return false;
@@ -77,8 +63,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('moodmate_user');
+    authAPI.logout();
   };
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
 
   return (
     <AuthContext.Provider

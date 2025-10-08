@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import { Heart, TrendingUp, Calendar as CalendarIcon, Award, Smile, Target, Zap, Activity, Moon, Brain, Tag, MousePointer, Keyboard, Clock } from 'lucide-react';
+import { Heart, TrendingUp, Calendar as CalendarIcon, Award, Smile, Target, Zap, Activity, Moon, Brain, MousePointer, Keyboard, Clock } from 'lucide-react';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
+import { useMoodLogs } from '@/hooks/useMoodLogs';
 
 interface MoodLog {
-  id: string;
+  _id?: string;
+  id?: string;
   userId: string;
   mood: string;
   moodName: string;
@@ -68,7 +69,7 @@ const MOOD_TAGS = [
 const MoodTracker = () => {
   const { user } = useAuth();
   const { metrics, getInferredMood } = useActivityTracking();
-  const [logs, setLogs] = useState<MoodLog[]>([]);
+  const { logs, isLoading, aiInsights, aiInsightsLoading, createMoodLog } = useMoodLogs();
   const [intensity, setIntensity] = useState(5);
   const [sleepQuality, setSleepQuality] = useState(5);
   const [stressLevel, setStressLevel] = useState(5);
@@ -106,14 +107,11 @@ const MoodTracker = () => {
     const predictedMoodName = getPredictedMood();
     const predictedMoodEmoji = MOODS.find(m => m.label === predictedMoodName)?.emoji || '😊';
     
-    const newLog: MoodLog = {
-      id: Date.now().toString(),
-      userId: user!.id,
+    const newLog = {
       mood: predictedMoodEmoji,
       moodName: predictedMoodName,
       intensity,
       note: note.trim(),
-      date: new Date().toISOString(),
       sleepQuality,
       stressLevel,
       tags: selectedTags,
@@ -127,18 +125,12 @@ const MoodTracker = () => {
       },
     };
 
-    const stored = localStorage.getItem('moodmate_mood_logs');
-    const allLogs = stored ? JSON.parse(stored) : [];
-    allLogs.push(newLog);
-    localStorage.setItem('moodmate_mood_logs', JSON.stringify(allLogs));
-
-    setLogs([newLog, ...logs]);
+    createMoodLog(newLog);
     setNote('');
     setIntensity(5);
     setSleepQuality(5);
     setStressLevel(5);
     setSelectedTags([]);
-    toast.success('Mood logged successfully!');
   };
 
   // Calculate metrics
@@ -585,6 +577,100 @@ const MoodTracker = () => {
             </Card>
           ))}
         </div>
+      </div>
+
+      {/* AI Insights Section */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Brain className="h-6 w-6 text-purple-500" />
+          <h2 className="text-2xl font-bold">AI Mood Insights</h2>
+        </div>
+
+        {aiInsightsLoading ? (
+          <Card className="p-6 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
+              <span className="text-muted-foreground">Analyzing your mood patterns...</span>
+            </div>
+          </Card>
+        ) : aiInsights?.needsMoreData ? (
+          <Card className="p-6 text-center bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20">
+            <Brain className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Keep Tracking!</h3>
+            <p className="text-muted-foreground">
+              {aiInsights.message}
+            </p>
+          </Card>
+        ) : aiInsights?.analysis ? (
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Overall Trend */}
+            <Card className="p-6 bg-gradient-to-br from-green-500/10 to-blue-500/10 border-green-500/20">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="h-5 w-5 text-green-500" />
+                <h3 className="font-semibold">Mood Trend</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2 capitalize">
+                {aiInsights.analysis.overallTrend} trend
+              </p>
+              <p className="text-sm">{aiInsights.analysis.insights}</p>
+            </Card>
+
+            {/* Patterns */}
+            <Card className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="h-5 w-5 text-purple-500" />
+                <h3 className="font-semibold">Patterns</h3>
+              </div>
+              <div className="space-y-2">
+                {aiInsights.analysis.patterns.length > 0 ? (
+                  aiInsights.analysis.patterns.map((pattern, index) => (
+                    <div key={index} className="text-sm">
+                      • {pattern}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Continue tracking to identify patterns</p>
+                )}
+              </div>
+            </Card>
+
+            {/* Recommendations */}
+            <Card className="p-6 bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20 md:col-span-2">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="h-5 w-5 text-orange-500" />
+                <h3 className="font-semibold">AI Recommendations</h3>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {aiInsights.analysis.recommendations.length > 0 ? (
+                  aiInsights.analysis.recommendations.map((rec, index) => (
+                    <div key={index} className="text-sm p-2 bg-background/50 rounded">
+                      {rec}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm p-2 bg-background/50 rounded text-muted-foreground">
+                    Keep logging your moods for personalized recommendations
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {/* Positive Affirmation */}
+            <Card className="p-6 bg-gradient-to-br from-pink-500/10 to-purple-500/10 border-pink-500/20 md:col-span-2">
+              <div className="text-center">
+                <div className="text-2xl mb-2">💫</div>
+                <p className="text-lg font-medium text-pink-600">
+                  {aiInsights.analysis.positiveAffirmation || 'You are taking positive steps by tracking your mood patterns.'}
+                </p>
+              </div>
+            </Card>
+          </div>
+        ) : (
+          <Card className="p-6 text-center">
+            <Brain className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground">AI insights will appear here once you have enough mood data.</p>
+          </Card>
+        )}
       </div>
     </div>
   );

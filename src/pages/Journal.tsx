@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { BookOpen, Plus, Search, Calendar, Image as ImageIcon, Sparkles, X } from 'lucide-react';
+import { BookOpen, Plus, Search, Calendar, Image as ImageIcon, Sparkles, X, AlertCircle } from 'lucide-react';
+import { useJournal } from '@/hooks/useJournal';
 
 interface JournalEntry {
   id: string;
@@ -55,7 +56,6 @@ const CONTEXT_TAGS = [
 
 const Journal = () => {
   const { user } = useAuth();
-  const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [title, setTitle] = useState('');
@@ -64,21 +64,9 @@ const Journal = () => {
   const [selectedEmotionTags, setSelectedEmotionTags] = useState<string[]>([]);
   const [selectedContextTags, setSelectedContextTags] = useState<string[]>([]);
   const [photo, setPhoto] = useState<string>('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    loadEntries();
-  }, [user]);
-
-  const loadEntries = () => {
-    const stored = localStorage.getItem('moodmate_journal_entries');
-    if (stored) {
-      const allEntries: JournalEntry[] = JSON.parse(stored);
-      const userEntries = allEntries.filter(e => e.userId === user?.id);
-      setEntries(userEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-    }
-  };
+  
+  const { entries, isLoading, createEntry } = useJournal(searchQuery);
 
   const toggleEmotionTag = (tag: string) => {
     setSelectedEmotionTags(prev =>
@@ -110,25 +98,16 @@ const Journal = () => {
       return;
     }
 
-    const newEntry: JournalEntry = {
-      id: Date.now().toString(),
-      userId: user!.id,
+    const newEntry = {
       title: title.trim(),
       content: content.trim(),
       mood: selectedMood,
-      date: new Date().toISOString(),
-      tags: [],
       emotionTags: selectedEmotionTags,
       contextTags: selectedContextTags,
       photo,
     };
 
-    const stored = localStorage.getItem('moodmate_journal_entries');
-    const allEntries = stored ? JSON.parse(stored) : [];
-    allEntries.push(newEntry);
-    localStorage.setItem('moodmate_journal_entries', JSON.stringify(allEntries));
-
-    setEntries([newEntry, ...entries]);
+    createEntry(newEntry);
     setTitle('');
     setContent('');
     setSelectedMood('😊');
@@ -136,13 +115,7 @@ const Journal = () => {
     setSelectedContextTags([]);
     setPhoto('');
     setShowForm(false);
-    toast.success('Journal entry saved!');
   };
-
-  const filteredEntries = entries.filter(entry =>
-    entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entry.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -312,7 +285,11 @@ const Journal = () => {
 
       {/* Entries List */}
       <div className="space-y-4">
-        {filteredEntries.length === 0 ? (
+        {isLoading ? (
+          <Card className="p-12 text-center">
+            <p className="text-lg text-muted-foreground">Loading...</p>
+          </Card>
+        ) : entries.length === 0 ? (
           <Card className="p-12 text-center">
             <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <p className="text-lg text-muted-foreground">
@@ -320,7 +297,7 @@ const Journal = () => {
             </p>
           </Card>
         ) : (
-          filteredEntries.map((entry, index) => (
+          entries.map((entry, index) => (
             <Card
               key={entry.id}
               className="p-6 hover:shadow-lg transition-shadow animate-fade-in border-l-4"
@@ -365,7 +342,7 @@ const Journal = () => {
                 </div>
               )}
 
-              {entry.aiAnalysis && (
+              {entry.aiAnalysis && !entry.aiAnalysis.error && (
                 <Card className="mt-4 p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="h-5 w-5 text-purple-500" />
@@ -373,12 +350,29 @@ const Journal = () => {
                   </div>
                   <div className="space-y-2 text-sm">
                     <p><strong>Sentiment:</strong> {entry.aiAnalysis.sentiment}</p>
-                    <p><strong>Emotions:</strong> {entry.aiAnalysis.emotions.join(', ')}</p>
+                    {entry.aiAnalysis.emotions.length > 0 && (
+                      <p><strong>Emotions:</strong> {entry.aiAnalysis.emotions.join(', ')}</p>
+                    )}
                     <p><strong>Summary:</strong> {entry.aiAnalysis.summary}</p>
                     <p className="italic text-muted-foreground">{entry.aiAnalysis.reflection}</p>
                     <p className="text-primary"><strong>Suggestion:</strong> {entry.aiAnalysis.suggestion}</p>
                     <p className="text-purple-600 font-medium">💫 {entry.aiAnalysis.affirmation}</p>
                   </div>
+                </Card>
+              )}
+
+              {entry.aiAnalysis?.error && (
+                <Card className="mt-4 p-4 bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="h-4 w-4 text-orange-500" />
+                    <span className="font-semibold text-orange-700">AI Analysis</span>
+                  </div>
+                  <p className="text-sm text-orange-700">
+                    {entry.aiAnalysis.error === 'AI analysis temporarily unavailable'
+                      ? 'AI insights will be available shortly. Your journal entry has been saved successfully.'
+                      : 'Unable to generate AI insights at this time, but your journal entry is saved.'
+                    }
+                  </p>
                 </Card>
               )}
             </Card>
