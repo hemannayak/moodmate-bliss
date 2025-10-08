@@ -75,24 +75,6 @@ const MoodTracker = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [note, setNote] = useState('');
   
-  // Calculate predicted mood based on metrics
-  const predictedMood = React.useMemo(() => {
-    return getPredictedMood();
-  }, [sleepQuality, stressLevel, intensity]);
-
-  useEffect(() => {
-    loadLogs();
-  }, [user]);
-
-  const loadLogs = () => {
-    const stored = localStorage.getItem('moodmate_mood_logs');
-    if (stored) {
-      const allLogs: MoodLog[] = JSON.parse(stored);
-      const userLogs = allLogs.filter(l => l.userId === user?.id);
-      setLogs(userLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-    }
-  };
-
   const getPredictedMood = (): string => {
     // Calculate mood based on sleep quality, stress level, and intensity
     const sleepScore = sleepQuality / 10;
@@ -108,6 +90,11 @@ const MoodTracker = () => {
     if (overallScore >= 3) return 'Sad';
     return 'Frustrated';
   };
+  
+  // Calculate predicted mood based on metrics
+  const predictedMood = React.useMemo(() => {
+    return getPredictedMood();
+  }, [sleepQuality, stressLevel, intensity]);
 
   const toggleTag = (tagId: string) => {
     setSelectedTags(prev =>
