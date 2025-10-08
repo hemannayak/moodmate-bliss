@@ -139,8 +139,8 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Phone</h3>
-                    <p className="text-muted-foreground">1-800-MOOD-HELP</p>
-                    <p className="text-sm text-muted-foreground">Mon-Fri, 9am-6pm PST</p>
+                    <p className="text-muted-foreground">+91-40-1234-5678</p>
+                    <p className="text-sm text-muted-foreground">Mon-Fri, 9am-6pm IST</p>
                   </div>
                 </div>
 
@@ -150,8 +150,8 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Office</h3>
-                    <p className="text-muted-foreground">123 Wellness Street</p>
-                    <p className="text-muted-foreground">San Francisco, CA 94102</p>
+                    <p className="text-muted-foreground">MoodMate India</p>
+                    <p className="text-muted-foreground">Hyderabad, Telangana, India</p>
                   </div>
                 </div>
               </div>
@@ -167,19 +167,19 @@ const Contact = () => {
                 <div>
                   <p className="font-semibold mb-1">Crisis Hotline (24/7)</p>
                   <p className="text-muted-foreground">
-                    National Suicide Prevention Lifeline: <span className="font-medium">1-800-273-8255</span>
+                    KIRAN Mental Health Helpline: <span className="font-medium">1800-599-0019</span>
                   </p>
                   <p className="text-muted-foreground">
-                    Crisis Text Line: Text <span className="font-medium">HOME</span> to <span className="font-medium">741741</span>
+                    Vandrevala Foundation: <span className="font-medium">1860-2662-345 / 1800-2333-330</span>
                   </p>
                 </div>
 
                 <div>
                   <p className="font-semibold mb-1">Additional Resources</p>
                   <ul className="space-y-1 text-muted-foreground">
-                    <li>• SAMHSA Helpline: 1-800-662-4357</li>
-                    <li>• NAMI Helpline: 1-800-950-6264</li>
-                    <li>• Veterans Crisis Line: 1-800-273-8255 (Press 1)</li>
+                    <li>• iCall Helpline: 9152987821</li>
+                    <li>• Sneha Foundation: 044-24640050</li>
+                    <li>• Mann Talks: +91-8686139139</li>
                   </ul>
                 </div>
 

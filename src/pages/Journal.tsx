@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { BookOpen, Plus, Search, Calendar } from 'lucide-react';
+import { BookOpen, Plus, Search, Calendar, Image as ImageIcon, Sparkles, X } from 'lucide-react';
 
 interface JournalEntry {
   id: string;
@@ -16,6 +17,17 @@ interface JournalEntry {
   mood: string;
   date: string;
   tags: string[];
+  emotionTags?: string[];
+  contextTags?: string[];
+  photo?: string;
+  aiAnalysis?: {
+    sentiment: string;
+    emotions: string[];
+    summary: string;
+    reflection: string;
+    suggestion: string;
+    affirmation: string;
+  };
 }
 
 const MOODS = [
@@ -27,6 +39,20 @@ const MOODS = [
   { emoji: '🤗', label: 'Grateful', color: 'hsl(330 70% 60%)' },
 ];
 
+const EMOTION_TAGS = [
+  'Happy', 'Sad', 'Anxious', 'Calm', 'Excited', 'Angry', 'Grateful', 'Frustrated'
+];
+
+const CONTEXT_TAGS = [
+  { id: 'work', label: '💼 Work' },
+  { id: 'family', label: '👨‍👩‍👧 Family' },
+  { id: 'study', label: '📚 Study' },
+  { id: 'health', label: '💊 Health' },
+  { id: 'social', label: '🎉 Social' },
+  { id: 'friends', label: '👥 Friends' },
+  { id: 'hobby', label: '🎨 Hobby' },
+];
+
 const Journal = () => {
   const { user } = useAuth();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -35,6 +61,11 @@ const Journal = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [selectedMood, setSelectedMood] = useState('😊');
+  const [selectedEmotionTags, setSelectedEmotionTags] = useState<string[]>([]);
+  const [selectedContextTags, setSelectedContextTags] = useState<string[]>([]);
+  const [photo, setPhoto] = useState<string>('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadEntries();
@@ -46,6 +77,30 @@ const Journal = () => {
       const allEntries: JournalEntry[] = JSON.parse(stored);
       const userEntries = allEntries.filter(e => e.userId === user?.id);
       setEntries(userEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    }
+  };
+
+  const toggleEmotionTag = (tag: string) => {
+    setSelectedEmotionTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const toggleContextTag = (tagId: string) => {
+    setSelectedContextTags(prev =>
+      prev.includes(tagId) ? prev.filter(t => t !== tagId) : [...prev, tagId]
+    );
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhoto(reader.result as string);
+        toast.success('Photo uploaded!');
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -63,6 +118,9 @@ const Journal = () => {
       mood: selectedMood,
       date: new Date().toISOString(),
       tags: [],
+      emotionTags: selectedEmotionTags,
+      contextTags: selectedContextTags,
+      photo,
     };
 
     const stored = localStorage.getItem('moodmate_journal_entries');
@@ -74,6 +132,9 @@ const Journal = () => {
     setTitle('');
     setContent('');
     setSelectedMood('😊');
+    setSelectedEmotionTags([]);
+    setSelectedContextTags([]);
+    setPhoto('');
     setShowForm(false);
     toast.success('Journal entry saved!');
   };
@@ -163,6 +224,74 @@ const Journal = () => {
               />
             </div>
 
+            <div>
+              <Label>Emotion Tags</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {EMOTION_TAGS.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant={selectedEmotionTags.includes(tag) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => toggleEmotionTag(tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label>Context Tags</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {CONTEXT_TAGS.map((tag) => (
+                  <Badge
+                    key={tag.id}
+                    variant={selectedContextTags.includes(tag.id) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => toggleContextTag(tag.id)}
+                  >
+                    {tag.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label>Add Photo (Optional)</Label>
+              <div className="mt-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+                {photo ? (
+                  <div className="relative inline-block">
+                    <img src={photo} alt="Journal photo" className="max-w-xs rounded-lg" />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute top-2 right-2"
+                      onClick={() => setPhoto('')}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="gap-2"
+                  >
+                    <ImageIcon className="h-5 w-5" />
+                    Upload Photo
+                  </Button>
+                )}
+              </div>
+            </div>
+
             <div className="flex gap-3">
               <Button
                 onClick={handleSaveEntry}
@@ -219,6 +348,39 @@ const Journal = () => {
                 </div>
               </div>
               <p className="text-foreground/80 whitespace-pre-wrap">{entry.content}</p>
+              
+              {entry.photo && (
+                <img src={entry.photo} alt="Journal entry" className="mt-4 max-w-md rounded-lg" />
+              )}
+
+              {(entry.emotionTags?.length || entry.contextTags?.length) && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {entry.emotionTags?.map(tag => (
+                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                  ))}
+                  {entry.contextTags?.map(tagId => {
+                    const tag = CONTEXT_TAGS.find(t => t.id === tagId);
+                    return tag ? <Badge key={tagId} variant="outline">{tag.label}</Badge> : null;
+                  })}
+                </div>
+              )}
+
+              {entry.aiAnalysis && (
+                <Card className="mt-4 p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="h-5 w-5 text-purple-500" />
+                    <h4 className="font-semibold">AI Analysis</h4>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <p><strong>Sentiment:</strong> {entry.aiAnalysis.sentiment}</p>
+                    <p><strong>Emotions:</strong> {entry.aiAnalysis.emotions.join(', ')}</p>
+                    <p><strong>Summary:</strong> {entry.aiAnalysis.summary}</p>
+                    <p className="italic text-muted-foreground">{entry.aiAnalysis.reflection}</p>
+                    <p className="text-primary"><strong>Suggestion:</strong> {entry.aiAnalysis.suggestion}</p>
+                    <p className="text-purple-600 font-medium">💫 {entry.aiAnalysis.affirmation}</p>
+                  </div>
+                </Card>
+              )}
             </Card>
           ))
         )}

@@ -101,12 +101,31 @@ const MoodTracker = () => {
     );
   };
 
+  const getPredictedMood = (): string => {
+    // Calculate mood based on sleep quality, stress level, and intensity
+    const sleepScore = sleepQuality / 10;
+    const stressScore = (10 - stressLevel) / 10;
+    const intensityScore = intensity / 10;
+    
+    const overallScore = (sleepScore * 0.3 + stressScore * 0.4 + intensityScore * 0.3) * 10;
+    
+    if (overallScore >= 7.5) return 'Happy';
+    if (overallScore >= 6) return 'Calm';
+    if (overallScore >= 4.5) return 'Tired';
+    if (stressLevel >= 7) return 'Anxious';
+    if (overallScore >= 3) return 'Sad';
+    return 'Frustrated';
+  };
+
   const handleLogMood = () => {
+    const predictedMood = getPredictedMood();
+    const predictedMoodEmoji = MOODS.find(m => m.label === predictedMood)?.emoji || selectedMood;
+    
     const newLog: MoodLog = {
       id: Date.now().toString(),
       userId: user!.id,
-      mood: selectedMood,
-      moodName: selectedMoodName,
+      mood: predictedMoodEmoji,
+      moodName: predictedMood,
       intensity,
       note: note.trim(),
       date: new Date().toISOString(),
